@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeefIndex — Precios de carne en tiempo real</title>
+  <meta name="description" content="Referencia de precios de carne para productores exportadores argentinos.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red: #8B1A1A; --red-light: #f9eded; --red-mid: #c0392b;
+      --cel: #2980b9; --cel-dark: #1a6fa0; --cel-light: #eaf4fb;
+      --text: #1a1a1a; --muted: #666;
+      --border: rgba(0,0,0,0.09); --surface: #fff; --bg: #f7f5f2;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* NAV */
+    nav { background: #fff; border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 600; color: var(--red); letter-spacing: -0.5px; text-decoration: none; }
+    .logo span { color: var(--cel); }
+    .btn-lang { font-size: 12px; padding: 5px 14px; border-radius: 20px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+    .btn-lang.active   { background: var(--cel); color: #fff; border: none; }
+    .btn-lang.inactive { background: #fff; color: var(--cel); border: 1.5px solid var(--cel); }
+    .btn-primary { font-size: 13px; padding: 7px 18px; border-radius: 7px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; background: var(--cel); color: #fff; }
+    .btn-primary:hover { background: var(--cel-dark); }
+
+    /* HERO */
+    .hero { background: var(--red); color: #fff; padding: 2.5rem 2rem 2rem; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; right: -40px; top: -40px; width: 260px; height: 260px; border-radius: 50%; background: rgba(255,255,255,0.04); }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 500; margin-bottom: 8px; line-height: 1.2; }
+    .hero p  { font-size: 14px; opacity: 0.8; margin-bottom: 1.5rem; }
+    .last-update { font-size: 11px; opacity: 0.65; display: flex; align-items: center; gap: 6px; }
+    .dot-live { width: 7px; height: 7px; border-radius: 50%; background: #6effc2; display: inline-block; animation: pulse 2s infinite; flex-shrink: 0; }
+    @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:0.3 } }
+
+    /* TIRA RESUMEN — ahora 5 mercados */
+    .summary-strip { display: grid; grid-template-columns: repeat(5,1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+    .sc { background: #fff; padding: 1rem 1.25rem; transition: background 0.1s; }
+    .sc:hover { background: #fafafa; }
+    .sc .flag  { font-size: 18px; margin-bottom: 4px; }
+    .sc .ctry  { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .sc .price { font-size: 18px; font-weight: 500; }
+    .unit  { font-size: 11px; color: var(--muted); font-weight: 400; }
+    .chg   { font-size: 12px; font-weight: 500; }
+    .up    { color: #1a7a4a; }
+    .dn    { color: var(--red-mid); }
+
+    /* MAIN */
+    .main { padding: 1.5rem 2rem; max-width: 1120px; margin: 0 auto; }
+
+    /* COMPARADOR */
+    .comparador { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2.5rem; }
+    .cmp-title  { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 500; margin-bottom: 1.25rem; color: var(--red); }
+    .comp-grid  { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
+    .cbw { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .cbb { width: 100%; height: 120px; background: var(--bg); border-radius: 6px; display: flex; align-items: flex-end; overflow: hidden; }
+    .cb  { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.6s ease; }
+
+    /* SECCIONES */
+    .market-section  { margin-bottom: 2.75rem; }
+    .section-header  { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; padding-bottom: .75rem; border-bottom: 2px solid var(--red); }
+    .section-title   { font-family: 'Playfair Display', serif; font-size: 21px; font-weight: 500; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .badge           { font-size: 10px; font-family: 'DM Sans', sans-serif; font-weight: 500; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-live      { background: #e8f7f0; color: #1a7a4a; }
+    .badge-manual    { background: var(--cel-light); color: var(--cel); }
+    .source-tag      { font-size: 11px; color: var(--muted); }
+
+    /* DATA GRID */
+    .data-grid    { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 12px; margin-bottom: 1rem; }
+    .metric-card  { background: #fff; border: 0.5px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .metric-value { font-size: 22px; font-weight: 500; }
+    .metric-unit  { font-size: 12px; color: var(--muted); font-weight: 400; }
+    .metric-delta { font-size: 12px; margin-top: 4px; font-weight: 500; }
+    .chart-card   { background: #fff; border: 0.5px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .chart-label  { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+
+    /* TABLAS */
+    .table-wrap      { background: #fff; border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+    table.cuts       { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.cuts th    { text-align: left; padding: 7px 12px; font-weight: 500; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); }
+    table.cuts td    { padding: 9px 12px; border-bottom: 0.5px solid var(--border); }
+    table.cuts tr:last-child td { border-bottom: none; }
+    table.cuts tr:hover td { background: #fafafa; }
+
+    /* ESTADOS */
+    .api-loading { text-align: center; padding: 2rem; color: var(--muted); font-size: 13px; }
+    .api-error   { padding: 1rem 1.25rem; color: var(--red-mid); font-size: 12px; background: var(--red-light); border-radius: 8px; margin: .5rem; }
+
+    /* MODAL */
+    .modal-overlay      { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal-box  { background: #fff; border-radius: 14px; padding: 2rem; width: 360px; max-width: 92vw; }
+    .modal-box h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 500; margin-bottom: 4px; }
+    .modal-close  { float: right; cursor: pointer; font-size: 20px; color: var(--muted); background: none; border: none; line-height: 1; }
+    .tab-row      { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .tab-btn      { background: none; border: none; font-size: 14px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding-bottom: 6px; border-bottom: 2px solid transparent; }
+    .tab-btn.active   { color: var(--cel); border-bottom-color: var(--cel); }
+    .tab-btn.inactive { color: var(--muted); }
+    .field        { margin-bottom: 1rem; }
+    .field label  { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .field input  { width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Sans', sans-serif; outline: none; }
+    .field input:focus { border-color: var(--cel); }
+    .btn-submit   { width: 100%; padding: 11px; background: var(--cel); color: #fff; border: none; border-radius: 7px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; margin-top: .5rem; }
+    .btn-submit:hover { background: var(--cel-dark); }
+
+    footer { text-align: center; padding: 2rem; font-size: 11px; color: var(--muted); border-top: 0.5px solid var(--border); margin-top: 1rem; }
+
+    @media (max-width: 900px) {
+      .summary-strip { grid-template-columns: repeat(3,1fr); }
+      .comp-grid     { grid-template-columns: repeat(3,1fr); }
+    }
+    @media (max-width: 600px) {
+      .summary-strip { grid-template-columns: repeat(2,1fr); }
+      .comp-grid     { grid-template-columns: repeat(2,1fr); }
+      .data-grid     { grid-template-columns: 1fr 1fr; }
+      .data-grid .chart-card { grid-column: 1/-1; }
+      nav { padding: 0 1rem; }
+      .main { padding: 1rem; }
+    }
+    @media (max-width: 400px) { .data-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="#">Beef<span>Index</span></a>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button id="btn-es" class="btn-lang active"   onclick="setLang('es')">ES</button>
+    <button id="btn-en" class="btn-lang inactive" onclick="setLang('en')">EN</button>
+    <button class="btn-primary" onclick="openModal()" data-es="Ingresar" data-en="Sign in">Ingresar</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1 data-es="Precios de carne en tiempo real" data-en="Real-time beef market prices">Precios de carne en tiempo real</h1>
+  <p  data-es="Referencia para productores exportadores argentinos" data-en="Reference tool for Argentine beef exporters">Referencia para productores exportadores argentinos</p>
+  <div class="last-update"><span class="dot-live"></span><span id="upd-text">Cargando datos...</span></div>
+</div>
+
+<!-- TIRA RESUMEN — 5 mercados -->
+<div class="summary-strip">
+  <div class="sc">
+    <div class="flag">🇦🇷</div>
+    <div class="ctry" data-es="Argentina" data-en="Argentina">Argentina</div>
+    <div class="price" id="sum-ar-price">— <span class="unit">USD/ton FOB</span></div>
+    <div class="chg"  id="sum-ar-chg">—</div>
+  </div>
+  <div class="sc">
+    <div class="flag">🇺🇸</div>
+    <div class="ctry" data-es="Estados Unidos" data-en="United States">Estados Unidos</div>
+    <div class="price" id="sum-us-price">— <span class="unit">USD/cwt</span></div>
+    <div class="chg"   id="sum-us-chg">Cargando USDA...</div>
+  </div>
+  <div class="sc">
+    <div class="flag">🇧🇷</div>
+    <div class="ctry" data-es="Brasil" data-en="Brazil">Brasil</div>
+    <div class="price" id="sum-br-price">— <span class="unit">USD/kg</span></div>
+    <div class="chg"   id="sum-br-chg">—</div>
+  </div>
+  <div class="sc">
+    <div class="flag">🇪🇺</div>
+    <div class="ctry" data-es="Unión Europea" data-en="European Union">Unión Europea</div>
+    <div class="price" id="sum-eu-price">— <span class="unit">USD/kg</span></div>
+    <div class="chg"   id="sum-eu-chg">—</div>
+  </div>
+  <div class="sc">
+    <div class="flag">🇦🇺</div>
+    <div class="ctry" data-es="Australia" data-en="Australia">Australia</div>
+    <div class="price" id="sum-au-price">— <span class="unit">AUD c/kg</span></div>
+    <div class="chg"   id="sum-au-chg">Cargando MLA...</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- COMPARADOR -->
+  <div class="comparador">
+    <div class="cmp-title" data-es="Comparador de precios entre mercados" data-en="Price comparison across markets">Comparador de precios entre mercados</div>
+    <div class="comp-grid">
+      <div class="cbw">
+        <div class="cbb"><div class="cb" style="height:71%;background:#74b9e8;"></div></div>
+        <div style="font-size:12px;color:var(--muted);">🇦🇷 Argentina</div>
+        <div style="font-size:14px;font-weight:500;" id="cmp-ar">~$4.850/ton</div>
+      </div>
+      <div class="cbw">
+        <div class="cbb"><div class="cb" id="bar-us" style="height:100%;background:#8B1A1A;"></div></div>
+        <div style="font-size:12px;color:var(--muted);">🇺🇸 EE.UU.</div>
+        <div style="font-size:14px;font-weight:500;" id="cmp-us">Cargando...</div>
+      </div>
+      <div class="cbw">
+        <div class="cbb"><div class="cb" style="height:60%;background:#e67e22;"></div></div>
+        <div style="font-size:12px;color:var(--muted);">🇧🇷 Brasil</div>
+        <div style="font-size:14px;font-weight:500;" id="cmp-br">—</div>
+      </div>
+      <div class="cbw">
+        <div class="cbb"><div class="cb" style="height:86%;background:#27ae60;"></div></div>
+        <div style="font-size:12px;color:var(--muted);">🇪🇺 UE</div>
+        <div style="font-size:14px;font-weight:500;" id="cmp-eu">—</div>
+      </div>
+      <div class="cbw">
+        <div class="cbb"><div class="cb" id="bar-au" style="height:75%;background:#f39c12;"></div></div>
+        <div style="font-size:12px;color:var(--muted);">🇦🇺 Australia</div>
+        <div style="font-size:14px;font-weight:500;" id="cmp-au">Cargando...</div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:1rem;" data-es="EE.UU. y Australia: datos en vivo vía API. Argentina, Brasil, UE: actualización manual." data-en="USA and Australia: live API data. Argentina, Brazil, EU: manual update.">EE.UU. y Australia: datos en vivo vía API. Argentina, Brasil, UE: actualización manual.</p>
+  </div>
+
+  <!-- ══ ARGENTINA — MANUAL ══ -->
+  <div class="market-section">
+    <div class="section-header">
+      <div class="section-title">🇦🇷 <span data-es="Argentina" data-en="Argentina">Argentina</span>
+        <span class="badge badge-manual" data-es="Actualización manual" data-en="Manual update">Actualización manual</span>
+      </div>
+      <div class="source-tag" data-es="Fuente: APEA / Mercado de Liniers" data-en="Source: APEA / Liniers Market">Fuente: APEA / Mercado de Liniers</div>
+    </div>
+    <div class="data-grid">
+      <div class="metric-card">
+        <div class="metric-label" data-es="Precio canal (gancho)" data-en="Carcass price">Precio canal (gancho)</div>
+        <div class="metric-value" id="ar-canal-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">USD/kg</div>
+        <div class="metric-delta" id="ar-canal-chg"></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label" data-es="FOB exportación" data-en="FOB export">FOB exportación</div>
+        <div class="metric-value" id="ar-fob-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">USD/ton</div>
+        <div class="metric-delta" id="ar-fob-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="Evolución 6 meses — USD/kg" data-en="6-month trend — USD/kg">Evolución 6 meses — USD/kg</div>
+        <div style="position:relative;height:80px;"><canvas id="chartAR"></canvas></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="cuts">
+        <thead><tr>
+          <th data-es="Corte" data-en="Cut">Corte</th>
+          <th>USD/kg</th>
+          <th data-es="Var. semana" data-en="Weekly">Var. semana</th>
+          <th data-es="Var. mes" data-en="Monthly">Var. mes</th>
+        </tr></thead>
+        <tbody id="ar-cuts-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ ESTADOS UNIDOS — USDA EN VIVO ══ -->
+  <div class="market-section">
+    <div class="section-header">
+      <div class="section-title">🇺🇸 <span data-es="Estados Unidos" data-en="United States">Estados Unidos</span>
+        <span class="badge badge-live" data-es="API en vivo — USDA" data-en="Live API — USDA">API en vivo — USDA</span>
+      </div>
+      <div class="source-tag">USDA AMS · MyMarketNews · National Weekly Boxed Beef Cutout</div>
+    </div>
+    <div class="data-grid">
+      <div class="metric-card">
+        <div class="metric-label" data-es="Precio Choice" data-en="Choice price">Precio Choice</div>
+        <div class="metric-value" id="us-choice-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">USD/cwt</div>
+        <div class="metric-delta" id="us-choice-chg"></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label" data-es="Precio Select" data-en="Select price">Precio Select</div>
+        <div class="metric-value" id="us-select-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">USD/cwt</div>
+        <div class="metric-delta" id="us-select-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="Evolución reciente — USD/cwt" data-en="Recent trend — USD/cwt">Evolución reciente — USD/cwt</div>
+        <div style="position:relative;height:80px;"><canvas id="chartUS"></canvas></div>
+      </div>
+    </div>
+    <div id="us-table" class="table-wrap">
+      <div class="api-loading">Consultando USDA...</div>
+    </div>
+  </div>
+
+  <!-- ══ BRASIL — MANUAL ══ -->
+  <div class="market-section">
+    <div class="section-header">
+      <div class="section-title">🇧🇷 <span data-es="Brasil" data-en="Brazil">Brasil</span>
+        <span class="badge badge-manual" data-es="Actualización manual" data-en="Manual update">Actualización manual</span>
+      </div>
+      <div class="source-tag" data-es="Fuente: CEPEA / Esalq" data-en="Source: CEPEA / Esalq">Fuente: CEPEA / Esalq</div>
+    </div>
+    <div class="data-grid">
+      <div class="metric-card">
+        <div class="metric-label" data-es="Precio canal" data-en="Carcass price">Precio canal</div>
+        <div class="metric-value" id="br-canal-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">USD/kg</div>
+        <div class="metric-delta" id="br-canal-chg"></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label" data-es="FOB exportación" data-en="FOB export">FOB exportación</div>
+        <div class="metric-value" id="br-fob-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">USD/ton</div>
+        <div class="metric-delta" id="br-fob-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="Evolución 6 meses — USD/kg" data-en="6-month trend — USD/kg">Evolución 6 meses — USD/kg</div>
+        <div style="position:relative;height:80px;"><canvas id="chartBR"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ UNIÓN EUROPEA — MANUAL ══ -->
+  <div class="market-section">
+    <div class="section-header">
+      <div class="section-title">🇪🇺 <span data-es="Unión Europea" data-en="European Union">Unión Europea</span>
+        <span class="badge badge-manual" data-es="Actualización manual" data-en="Manual update">Actualización manual</span>
+      </div>
+      <div class="source-tag" data-es="Fuente: Eurostat / Comisión Europea" data-en="Source: Eurostat / European Commission">Fuente: Eurostat / Comisión Europea</div>
+    </div>
+    <div class="data-grid">
+      <div class="metric-card">
+        <div class="metric-label" data-es="Precio canal" data-en="Carcass price">Precio canal</div>
+        <div class="metric-value" id="eu-canal-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">USD/kg</div>
+        <div class="metric-delta" id="eu-canal-chg"></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label" data-es="FOB importación" data-en="FOB import">FOB importación</div>
+        <div class="metric-value" id="eu-fob-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">USD/ton</div>
+        <div class="metric-delta" id="eu-fob-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="Evolución 6 meses — USD/kg" data-en="6-month trend — USD/kg">Evolución 6 meses — USD/kg</div>
+        <div style="position:relative;height:80px;"><canvas id="chartEU"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ AUSTRALIA — API MLA EN VIVO ══ -->
+  <div class="market-section">
+    <div class="section-header">
+      <div class="section-title">🇦🇺 <span data-es="Australia" data-en="Australia">Australia</span>
+        <span class="badge badge-live" data-es="API en vivo — MLA" data-en="Live API — MLA">API en vivo — MLA</span>
+      </div>
+      <div class="source-tag">Meat &amp; Livestock Australia · NLRS · Eastern Young Cattle Indicator</div>
+    </div>
+    <div class="data-grid">
+      <div class="metric-card">
+        <div class="metric-label" data-es="EYCI (indicador ganado joven)" data-en="EYCI (young cattle indicator)">EYCI (indicador ganado joven)</div>
+        <div class="metric-value" id="au-eyci-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">AUD c/kg liveweight</div>
+        <div class="metric-delta" id="au-eyci-chg"></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label" data-es="Heavy Steer (over the hooks)" data-en="Heavy Steer (over the hooks)">Heavy Steer (over the hooks)</div>
+        <div class="metric-value" id="au-hs-val">—</div>
+        <div class="metric-unit" style="margin-top:3px;">AUD c/kg dressed weight</div>
+        <div class="metric-delta" id="au-hs-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="Evolución EYCI — AUD c/kg lw" data-en="EYCI trend — AUD c/kg lw">Evolución EYCI — AUD c/kg lw</div>
+        <div style="position:relative;height:80px;"><canvas id="chartAU"></canvas></div>
+      </div>
+    </div>
+    <div id="au-table" class="table-wrap">
+      <div class="api-loading">Consultando MLA...</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>BeefIndex &mdash; <span data-es="Datos de referencia. No constituyen asesoramiento financiero." data-en="Reference data only. Not financial advice.">Datos de referencia. No constituyen asesoramiento financiero.</span></footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 data-es="Acceder" data-en="Sign in">Acceder</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem;" data-es="Plataforma exclusiva para productores exportadores" data-en="Exclusive platform for beef exporters">Plataforma exclusiva para productores exportadores</p>
+    <div class="tab-row">
+      <button id="tab-login" class="tab-btn active"   onclick="setTab('login')"    data-es="Ingresar"    data-en="Log in">Ingresar</button>
+      <button id="tab-reg"   class="tab-btn inactive" onclick="setTab('register')" data-es="Registrarse" data-en="Register">Registrarse</button>
+    </div>
+    <div id="form-login">
+      <div class="field"><label data-es="Correo electrónico" data-en="Email">Correo electrónico</label><input type="email" placeholder="nombre@empresa.com"></div>
+      <div class="field"><label data-es="Contraseña" data-en="Password">Contraseña</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-submit" data-es="Ingresar" data-en="Sign in">Ingresar</button>
+    </div>
+    <div id="form-register" style="display:none;">
+      <div class="field"><label data-es="Nombre completo" data-en="Full name">Nombre completo</label><input type="text" placeholder="Juan García"></div>
+      <div class="field"><label data-es="Correo electrónico" data-en="Email">Correo electrónico</label><input type="email" placeholder="nombre@empresa.com"></div>
+      <div class="field"><label data-es="Empresa / Frigorífico" data-en="Company">Empresa / Frigorífico</label><input type="text" placeholder="Frigorífico SA"></div>
+      <div class="field"><label data-es="Contraseña" data-en="Password">Contraseña</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-submit" data-es="Crear cuenta" data-en="Create account">Crear cuenta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Carga primero los datos manuales desde precios.js -->
+<script src="precios.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+
+/* ── HELPERS ── */
+function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function setHTML(id, val) { const el = document.getElementById(id); if (el) el.innerHTML = val; }
+function setChg(id, txt, tend) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = txt;
+  el.className = 'metric-delta' + (tend ? ' ' + tend : '');
+}
+function mkLine(id, labels, data, color) {
+  const ex = Chart.getChart(id); if (ex) ex.destroy();
+  new Chart(document.getElementById(id), {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor: color, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: color + '22', tension: 0.4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } } }
+  });
+}
+const MESES = ['Oct','Nov','Dic','Ene','Feb','Mar'];
+
+
+/* ── RENDERIZAR DATOS MANUALES (de precios.js) ── */
+function renderManual() {
+  const ar = DATOS.argentina;
+  set('ar-canal-val', '$' + ar.canal.valor.toFixed(2));
+  setChg('ar-canal-chg', ar.canal.cambio, ar.canal.tendencia);
+  set('ar-fob-val', '$' + ar.fob.valor.toLocaleString('es-AR'));
+  setChg('ar-fob-chg', ar.fob.cambio, ar.fob.tendencia);
+  setHTML('sum-ar-price', '$' + ar.fob.valor.toLocaleString('es-AR') + ' <span class="unit">USD/ton FOB</span>');
+  set('sum-ar-chg', 'Actualizado: ' + ar.fechaActualizacion);
+  document.getElementById('sum-ar-chg').className = 'chg up';
+  set('cmp-ar', '$' + ar.fob.valor.toLocaleString('es-AR') + '/ton');
+  document.getElementById('ar-cuts-body').innerHTML = ar.cortes.map(c =>
+    `<tr><td>${c.nombre}</td><td>$${c.precio.toFixed(2)}</td>
+     <td class="chg ${c.varSemTend}">${c.varSemana}</td>
+     <td class="chg ${c.varMesTend}">${c.varMes}</td></tr>`
+  ).join('');
+
+  const br = DATOS.brasil;
+  set('br-canal-val', '$' + br.canal.valor.toFixed(2));
+  setChg('br-canal-chg', br.canal.cambio, br.canal.tendencia);
+  set('br-fob-val', '$' + br.fob.valor.toLocaleString('es-AR'));
+  setChg('br-fob-chg', br.fob.cambio, br.fob.tendencia);
+  setHTML('sum-br-price', '$' + br.canal.valor.toFixed(2) + ' <span class="unit">USD/kg</span>');
+  set('sum-br-chg', br.canal.cambio);
+  document.getElementById('sum-br-chg').className = 'chg ' + br.canal.tendencia;
+  set('cmp-br', '$' + br.canal.valor.toFixed(2) + '/kg');
+
+  const eu = DATOS.ue;
+  set('eu-canal-val', '$' + eu.canal.valor.toFixed(2));
+  setChg('eu-canal-chg', eu.canal.cambio, eu.canal.tendencia);
+  set('eu-fob-val', '$' + eu.fob.valor.toLocaleString('es-AR'));
+  setChg('eu-fob-chg', eu.fob.cambio, eu.fob.tendencia);
+  setHTML('sum-eu-price', '$' + eu.canal.valor.toFixed(2) + ' <span class="unit">USD/kg</span>');
+  set('sum-eu-chg', eu.canal.cambio);
+  document.getElementById('sum-eu-chg').className = 'chg ' + eu.canal.tendencia;
+  set('cmp-eu', '$' + eu.canal.valor.toFixed(2) + '/kg');
+}
+
+
+/* ── API USDA ── */
+async function fetchUSDA() {
+  const url = 'https://marsapi.ams.usda.gov/services/v1.2/reports/2840?allSections=true&$top=20&$orderby=report_date%20desc';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error();
+    const json = await res.json();
+    const results = Array.isArray(json) ? json : (json.results || []);
+    const choice = results.filter(r => r.class && /choice/i.test(r.class) && r.price && +r.price > 0);
+    const select = results.filter(r => r.class && /select/i.test(r.class) && r.price && +r.price > 0);
+    if (!choice.length) throw new Error();
+
+    const lc = parseFloat(choice[0].price);
+    const ls = select.length ? parseFloat(select[0].price) : null;
+    const rDate = choice[0].report_date || choice[0].report_begin_date || '';
+
+    let diff = '', tend = '';
+    if (choice.length >= 2) {
+      const prev = parseFloat(choice[1].price);
+      const pct = ((lc - prev) / prev * 100).toFixed(1);
+      diff = pct >= 0 ? `↑ +${pct}% vs. sem. anterior` : `↓ ${pct}% vs. sem. anterior`;
+      tend = pct >= 0 ? 'up' : 'dn';
+    }
+
+    set('us-choice-val', '$' + lc.toFixed(2));
+    setChg('us-choice-chg', diff || 'precio semanal', tend);
+    if (ls) { set('us-select-val', '$' + ls.toFixed(2)); setChg('us-select-chg', 'Spread: $' + (lc - ls).toFixed(2), ''); }
+    setHTML('sum-us-price', '$' + lc.toFixed(2) + ' <span class="unit">USD/cwt Choice</span>');
+    set('sum-us-chg', diff || 'Precio Choice');
+    document.getElementById('sum-us-chg').className = 'chg ' + tend;
+    set('cmp-us', '$' + lc.toFixed(2) + '/cwt');
+
+    const rows = choice.slice(0, 10).map(r =>
+      `<tr><td>${r.report_date || r.report_begin_date || '—'}</td>
+       <td>${r.class || 'Choice'}</td>
+       <td>$${parseFloat(r.price).toFixed(2)}</td>
+       <td>${r.description || r.location || '—'}</td></tr>`).join('');
+    document.getElementById('us-table').innerHTML =
+      `<table class="cuts"><thead><tr><th>Fecha</th><th>Categoría</th><th>USD/cwt</th><th>Descripción</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+    const hP = choice.slice(0, 8).map(r => parseFloat(r.price)).reverse();
+    const hL = choice.slice(0, 8).map(r => { const d = r.report_date || r.report_begin_date || ''; return d.slice(5,10); }).reverse();
+    mkLine('chartUS', hL, hP, '#8B1A1A');
+
+    updateTimestamp('USDA al ' + rDate);
+
+  } catch {
+    set('us-choice-val', '$296.40'); setChg('us-choice-chg', '↑ +1.1% vs. sem. anterior', 'up');
+    set('us-select-val', '$278.60'); setChg('us-select-chg', 'Spread: $17.80', '');
+    setHTML('sum-us-price', '$296.40 <span class="unit">USD/cwt Choice</span>');
+    set('sum-us-chg', '↑ +1.1% semanal'); document.getElementById('sum-us-chg').className = 'chg up';
+    set('cmp-us', '$296.40/cwt');
+    document.getElementById('us-table').innerHTML = '<div class="api-error">USDA no disponible. Se muestran datos de referencia (mar. 2026).</div>';
+    mkLine('chartUS', MESES, [270.5, 278.2, 285.0, 289.4, 293.1, 296.4], '#8B1A1A');
+    updateTimestamp('datos de referencia');
+  }
+}
+
+
+/* ── API MLA — Eastern Young Cattle Indicator ── */
+async function fetchMLA() {
+  // MLA Statistics API — indicador EYCI (Eastern Young Cattle Indicator)
+  // Documentación: https://app.nlrsreports.mla.com.au/statistics/documentation
+  // El parámetro indicatorId=1 corresponde al EYCI nacional
+  const url = 'https://app.nlrsreports.mla.com.au/api/indicators/1/prices?pageSize=10&sortOrder=desc';
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    // La API devuelve { data: [ { date, price }, ... ] }
+    const rows = json.data || json.prices || json;
+    if (!rows || !rows.length) throw new Error('Sin datos');
+
+    const latest = rows[0];
+    const eyciVal = parseFloat(latest.price || latest.value || latest.indicatorPrice);
+    if (!eyciVal) throw new Error('Precio no encontrado');
+
+    let diff = '', tend = '';
+    if (rows.length >= 2) {
+      const prev = parseFloat(rows[1].price || rows[1].value || rows[1].indicatorPrice);
+      const pct = ((eyciVal - prev) / prev * 100).toFixed(1);
+      diff = pct >= 0 ? `↑ +${pct}% vs. semana anterior` : `↓ ${pct}% vs. semana anterior`;
+      tend = pct >= 0 ? 'up' : 'dn';
+    }
+
+    const reportDate = latest.date ? latest.date.slice(0, 10) : '';
+
+    set('au-eyci-val', eyciVal.toFixed(0));
+    setChg('au-eyci-chg', diff || 'indicador semanal', tend);
+
+    // Heavy Steer — usar datos de respaldo si la API no lo provee directamente
+    const au = DATOS.australia;
+    set('au-hs-val', au.heavySteer.valor.toString());
+    setChg('au-hs-chg', au.heavySteer.cambio, au.heavySteer.tendencia);
+
+    setHTML('sum-au-price', eyciVal.toFixed(0) + ' <span class="unit">AUD c/kg lw</span>');
+    set('sum-au-chg', diff || 'EYCI');
+    document.getElementById('sum-au-chg').className = 'chg ' + tend;
+    set('cmp-au', eyciVal.toFixed(0) + ' AUDc/kg');
+
+    // Tabla de datos recientes
+    const tableRows = rows.slice(0, 8).map(r => {
+      const p = parseFloat(r.price || r.value || r.indicatorPrice);
+      return `<tr><td>${(r.date || '—').slice(0,10)}</td><td>Eastern Young Cattle Indicator</td><td>${p.toFixed(0)}</td><td>AUD c/kg liveweight</td></tr>`;
+    }).join('');
+    document.getElementById('au-table').innerHTML =
+      `<table class="cuts"><thead><tr><th>Fecha</th><th>Indicador</th><th>AUD c/kg lw</th><th>Unidad</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+
+    // Gráfico
+    const hP = rows.slice(0, 8).map(r => parseFloat(r.price || r.value || r.indicatorPrice)).reverse();
+    const hL = rows.slice(0, 8).map(r => (r.date || '').slice(5, 10)).reverse();
+    mkLine('chartAU', hL, hP, '#f39c12');
+
+  } catch (e) {
+    // Fallback con datos manuales de precios.js
+    const au = DATOS.australia;
+    set('au-eyci-val', au.eyci.valor.toString());
+    setChg('au-eyci-chg', au.eyci.cambio + ' (ref. manual)', au.eyci.tendencia);
+    set('au-hs-val', au.heavySteer.valor.toString());
+    setChg('au-hs-chg', au.heavySteer.cambio, au.heavySteer.tendencia);
+    setHTML('sum-au-price', au.eyci.valor + ' <span class="unit">AUD c/kg lw</span>');
+    set('sum-au-chg', au.eyci.cambio);
+    document.getElementById('sum-au-chg').className = 'chg ' + au.eyci.tendencia;
+    set('cmp-au', au.eyci.valor + ' AUDc/kg');
+    document.getElementById('au-table').innerHTML =
+      '<div class="api-error">La API de MLA no respondió. Se muestran datos de referencia de precios.js.</div>';
+    mkLine('chartAU', MESES, au.historico, '#f39c12');
+  }
+}
+
+let _timestampSet = false;
+function updateTimestamp(src) {
+  if (_timestampSet) return;
+  _timestampSet = true;
+  set('upd-text', 'Datos ' + src + ' · Argentina, Brasil, UE: actualizados en precios.js');
+}
+
+
+/* ── IDIOMA ── */
+function setLang(lang) {
+  document.querySelectorAll('[data-es]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
+  const es = lang === 'es';
+  document.getElementById('btn-es').className = 'btn-lang ' + (es  ? 'active' : 'inactive');
+  document.getElementById('btn-en').className = 'btn-lang ' + (!es ? 'active' : 'inactive');
+}
+
+/* ── MODAL ── */
+function openModal()  { document.getElementById('modal').classList.add('show'); }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+function setTab(tab) {
+  document.getElementById('form-login').style.display    = tab === 'login'    ? 'block' : 'none';
+  document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('tab-login').className = 'tab-btn ' + (tab === 'login'    ? 'active' : 'inactive');
+  document.getElementById('tab-reg').className   = 'tab-btn ' + (tab === 'register' ? 'active' : 'inactive');
+}
+
+/* ── INICIO ── */
+renderManual();
+mkLine('chartAR', MESES, DATOS.argentina.historico, '#74b9e8');
+mkLine('chartBR', MESES, DATOS.brasil.historico,    '#e67e22');
+mkLine('chartEU', MESES, DATOS.ue.historico,        '#27ae60');
+mkLine('chartAU', MESES, DATOS.australia.historico, '#f39c12');
+fetchUSDA();
+fetchMLA();
+
+</script>
+</body>
+</html>
