@@ -72,13 +72,13 @@ const DATOS = {
     fechaActualizacion: "01/04/2026",
 
     /* 1er índice */
-    inmag_ars:    4453.13,
-    tipo_cambio:  1080.00,
-    cambio_vivo:    "↑ +1.8% esta semana",
-    tendencia_vivo: "up",
+    inmag_ars:    4284.86,
+    tipo_cambio:  1390.00,
+    cambio_vivo:    "0.0% esta semana",
+    tendencia_vivo: "-",
 
     /* 2do índice */
-    gancho_ars:   7200,
+    gancho_ars:   8000,
     cambio_gancho:    "↑ +2.1% esta semana",
     tendencia_gancho: "up",
 
@@ -122,15 +122,15 @@ const DATOS = {
     fechaActualizacion: "01/04/2026",
 
     /* 1er índice */
-    boi_gordo_brl_arroba: 350.00,
-    tipo_cambio_brl:        5.85,
-    cambio_vivo:    "↓ -0.4% esta semana",
-    tendencia_vivo: "dn",
+    boi_gordo_brl_arroba: 360.90,
+    tipo_cambio_brl:        5.16,
+    cambio_vivo:    "0.0% esta semana",
+    tendencia_vivo: "-",
 
     /* 2do índice */
-    gancho_brl_kg:   21.00,
-    cambio_gancho:    "↑ +1.2% esta semana",
-    tendencia_gancho: "up",
+    gancho_brl_kg:   360.73,
+    cambio_gancho:    "0.0% esta semana",
+    tendencia_gancho: "-",
 
     /* Gráfico histórico (últimos 6 meses, en BRL/arroba) */
     historico: [290, 305, 318, 332, 345, 350],
@@ -163,10 +163,10 @@ const DATOS = {
     fechaActualizacion: "01/04/2026",
 
     /* 1er índice */
-    eyci_aud_cents_kg:  820,
-    tipo_cambio_aud:    1.587,
-    cambio_vivo:    "↑ +1.2% esta semana",
-    tendencia_vivo: "up",
+    eyci_aud_cents_kg:  823.52,
+    tipo_cambio_aud:    1.45,
+    cambio_vivo:    "0.0% esta semana",
+    tendencia_vivo: "-",
 
     /* 2do índice */
     heavy_steer_aud_cents_kg: 840,
