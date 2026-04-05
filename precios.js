@@ -128,7 +128,7 @@ const DATOS = {
     tendencia_vivo: "-",
 
     /* 2do índice */
-    gancho_brl_kg:   360.73,
+    gancho_brl_kg:    13.57,
     cambio_gancho:    "0.0% esta semana",
     tendencia_gancho: "-",
 
