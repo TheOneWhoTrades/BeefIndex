@@ -72,13 +72,13 @@ const DATOS = {
     fechaActualizacion: "01/04/2026",
 
     /* 1er índice */
-    inmag_ars:    4453.13,
-    tipo_cambio:  1080.00,
+    inmag_ars:    4247.30,
+    tipo_cambio:  1370.00,
     cambio_vivo:    "↑ +1.8% esta semana",
     tendencia_vivo: "up",
 
     /* 2do índice */
-    gancho_ars:   7200,
+    gancho_ars:   8000,
     cambio_gancho:    "↑ +2.1% esta semana",
     tendencia_gancho: "up",
 
@@ -131,13 +131,13 @@ const DATOS = {
     fechaActualizacion: "01/04/2026",
 
     /* 1er índice */
-    boi_gordo_brl_arroba: 350.00,
-    tipo_cambio_brl:        5.85,
-    cambio_vivo:    "↓ -0.4% esta semana",
-    tendencia_vivo: "dn",
+    boi_gordo_brl_arroba: 365.60,
+    tipo_cambio_brl:        5.16,
+    cambio_vivo:    "↑ 2.7% esta semana",
+    tendencia_vivo: "up",
 
     /* 2do índice — usá UNA opción, la otra en null */
-    gancho_usd_kg:   4.28,   /* ← OPCIÓN A: USD/kg directo de CEPEA en inglés */
+    gancho_usd_kg:   4.86,   /* ← OPCIÓN A: USD/kg directo de CEPEA en inglés */
     gancho_brl_kg:   null,   /* ← OPCIÓN B: BRL/kg (dejar null si usás A)     */
     cambio_gancho:    "↑ +1.2% esta semana",
     tendencia_gancho: "up",
