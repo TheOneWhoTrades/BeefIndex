@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeefIndex — Precios de carne en tiempo real</title>
+  <meta name="description" content="Referencia de precios de carne para productores exportadores argentinos.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red:    #8B1A1A; --red-light: #f9eded; --red-mid: #c0392b;
+      --cel:    #2980b9; --cel-dark: #1a6fa0;  --cel-light: #eaf4fb;
+      --green:  #1a7a4a; --green-light: #e8f7f0;
+      --gold:   #c9860a; --gold-light: #fff8ec;
+      --text:   #1a1a1a; --muted: #666;
+      --border: rgba(0,0,0,0.09); --surface: #fff; --bg: #f7f5f2;
+
+      /* Colores de grupo */
+      --comp-color: #8B1A1A;   /* rojo para competidores */
+      --comp-light: #f9eded;
+      --buy-color:  #2980b9;   /* celeste para compradores */
+      --buy-light:  #eaf4fb;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+
+    /* NAV */
+    nav { background: #fff; border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 600; color: var(--red); letter-spacing: -0.5px; text-decoration: none; }
+    .logo span { color: var(--cel); }
+    .btn-lang { font-size: 12px; padding: 5px 14px; border-radius: 20px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+    .btn-lang.active   { background: var(--cel); color: #fff; border: none; }
+    .btn-lang.inactive { background: #fff; color: var(--cel); border: 1.5px solid var(--cel); }
+    .btn-primary { font-size: 13px; padding: 7px 18px; border-radius: 7px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; background: var(--cel); color: #fff; }
+    .btn-primary:hover { background: var(--cel-dark); }
+
+    /* HERO */
+    .hero { background: var(--red); color: #fff; padding: 2.5rem 2rem 2rem; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; right: -40px; top: -40px; width: 260px; height: 260px; border-radius: 50%; background: rgba(255,255,255,0.04); }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 500; margin-bottom: 8px; line-height: 1.2; }
+    .hero p  { font-size: 14px; opacity: 0.8; margin-bottom: 1.5rem; }
+    .last-update { font-size: 11px; opacity: 0.65; display: flex; align-items: center; gap: 6px; }
+    .dot-live { width: 7px; height: 7px; border-radius: 50%; background: #6effc2; display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:0.3 } }
+
+    /* MAIN */
+    .main { padding: 1.5rem 2rem; max-width: 1200px; margin: 0 auto; }
+
+    /* ── ENCABEZADO DE GRUPO ── */
+    .group-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 2.5rem 0 1.25rem;
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+    }
+    .group-header.competidores { background: var(--comp-light); border-left: 4px solid var(--comp-color); }
+    .group-header.compradores  { background: var(--buy-light);  border-left: 4px solid var(--buy-color);  }
+    .group-icon { font-size: 22px; }
+    .group-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; }
+    .group-title.competidores { color: var(--comp-color); }
+    .group-title.compradores  { color: var(--buy-color);  }
+    .group-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .group-badge {
+      margin-left: auto;
+      font-size: 11px; font-weight: 500;
+      padding: 4px 10px; border-radius: 20px;
+    }
+    .group-badge.competidores { background: var(--comp-color); color: #fff; }
+    .group-badge.compradores  { background: var(--buy-color);  color: #fff; }
+
+    /* ── TARJETA DE MERCADO ── */
+    .market-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .market-card.competidor { border-top: 3px solid var(--comp-color); }
+    .market-card.comprador  { border-top: 3px solid var(--buy-color);  }
+
+    /* Header de la tarjeta */
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .card-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+    .card-badge {
+      font-size: 10px; font-family: 'DM Sans', sans-serif; font-weight: 500;
+      padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .card-badge.competidor { background: var(--comp-light); color: var(--comp-color); }
+    .card-badge.comprador  { background: var(--buy-light);  color: var(--buy-color);  }
+    .card-source { font-size: 11px; color: var(--muted); text-align: right; }
+
+    /* Grid de índices — 2 por tarjeta + gráfico */
+    .indices-grid { display: grid; grid-template-columns: 1fr 1fr 1.8fr; gap: 12px; margin-bottom: 1rem; }
+
+    /* Tarjeta de índice */
+    .idx-card { background: var(--bg); border-radius: 10px; padding: 1rem 1.25rem; position: relative; }
+    .idx-card.primary   { border: 1.5px solid var(--gold);  background: var(--gold-light);  }
+    .idx-card.secondary { border: 1.5px solid var(--cel);   background: var(--cel-light);   }
+    .idx-card.secondary.comp { border-color: var(--red-mid); background: var(--red-light);  }
+
+    .idx-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; font-weight: 500; }
+    .idx-label.gold { color: var(--gold); }
+    .idx-label.blue { color: var(--cel);  }
+    .idx-label.red  { color: var(--red);  }
+
+    .idx-val  { font-size: 26px; font-weight: 500; line-height: 1.1; }
+    .idx-unit { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .idx-chg  { font-size: 12px; margin-top: 6px; font-weight: 500; }
+    .idx-note { font-size: 10px; color: var(--muted); margin-top: 4px; font-style: italic; }
+    .up { color: #1a7a4a; }
+    .dn { color: var(--red-mid); }
+
+    .idx-badge-top {
+      position: absolute; top: -9px; left: 12px;
+      font-size: 9px; font-weight: 500; padding: 2px 7px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .idx-badge-top.gold { background: var(--gold); color: #fff; }
+    .idx-badge-top.blue { background: var(--cel);  color: #fff; }
+    .idx-badge-top.red  { background: var(--red);  color: #fff; }
+
+    /* Chart card */
+    .chart-card  { background: #fff; border: 0.5px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .chart-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+
+
+    /* Nota de contexto */
+    .ctx-note { font-size: 11px; color: var(--muted); background: var(--bg); border-radius: 6px; padding: .6rem 1rem; margin-top: .75rem; border-left: 3px solid var(--border); }
+
+    /* MODAL */
+    .modal-overlay      { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal-box   { background: #fff; border-radius: 14px; padding: 2rem; width: 360px; max-width: 92vw; }
+    .modal-box h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 500; margin-bottom: 4px; }
+    .modal-close  { float: right; cursor: pointer; font-size: 20px; color: var(--muted); background: none; border: none; }
+    .tab-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .tab-btn { background: none; border: none; font-size: 14px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding-bottom: 6px; border-bottom: 2px solid transparent; }
+    .tab-btn.active   { color: var(--cel); border-bottom-color: var(--cel); }
+    .tab-btn.inactive { color: var(--muted); }
+    .field       { margin-bottom: 1rem; }
+    .field label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .field input { width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Sans', sans-serif; outline: none; }
+    .field input:focus { border-color: var(--cel); }
+    .btn-submit  { width: 100%; padding: 11px; background: var(--cel); color: #fff; border: none; border-radius: 7px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; margin-top: .5rem; }
+    .btn-submit:hover { background: var(--cel-dark); }
+
+    footer { text-align: center; padding: 2rem; font-size: 11px; color: var(--muted); border-top: 0.5px solid var(--border); margin-top: 2rem; }
+
+    @media (max-width: 768px) {
+      .indices-grid { grid-template-columns: 1fr 1fr; }
+      .indices-grid .chart-card { grid-column: 1 / -1; }
+      nav { padding: 0 1rem; }
+      .main { padding: 1rem; }
+      .group-badge { display: none; }
+    }
+    @media (max-width: 480px) { .indices-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#">Beef<span>Index</span></a>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button id="btn-es" class="btn-lang active"   onclick="setLang('es')">ES</button>
+    <button id="btn-en" class="btn-lang inactive" onclick="setLang('en')">EN</button>
+    <button class="btn-primary" onclick="openModal()" data-es="Ingresar" data-en="Sign in">Ingresar</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1 data-es="Precios de carne en tiempo real" data-en="Real-time beef market prices">Precios de carne en tiempo real</h1>
+  <p  data-es="Referencia para productores exportadores argentinos" data-en="Reference tool for Argentine beef exporters">Referencia para productores exportadores argentinos</p>
+  <div class="last-update"><span class="dot-live"></span><span id="upd-text">Cargando...</span></div>
+</div>
+
+<div class="main">
+
+  <!-- ═══════════════════════════════════════
+       GRUPO 1 — COMPETIDORES EXPORTADORES
+  ═══════════════════════════════════════ -->
+  <div class="group-header competidores">
+    <div class="group-icon">🏭</div>
+    <div>
+      <div class="group-title competidores" data-es="Competidores exportadores" data-en="Exporting competitors">Competidores exportadores</div>
+      <div class="group-desc" data-es="Países que compiten con Argentina en los mercados internacionales de carne vacuna" data-en="Countries competing with Argentina in global beef markets">Países que compiten con Argentina en los mercados internacionales de carne vacuna</div>
+    </div>
+    <div class="group-badge competidores" data-es="2 índices por mercado" data-en="2 indexes per market">2 índices por mercado</div>
+  </div>
+
+  <!-- ARGENTINA -->
+  <div class="market-card competidor" id="card-ar">
+    <div class="card-header">
+      <div class="card-title">
+        🇦🇷
+        <span data-es="Argentina" data-en="Argentina">Argentina</span>
+        <span class="card-badge competidor" data-es="Competidor · referencia" data-en="Competitor · reference">Competidor · referencia</span>
+      </div>
+      <div class="card-source">INMAG · Mercado Agroganadero · APEA</div>
+    </div>
+    <div class="indices-grid">
+      <div class="idx-card primary">
+        <span class="idx-badge-top gold" data-es="Novillo vivo equiv." data-en="Live cattle equiv.">Novillo vivo equiv.</span>
+        <div class="idx-label gold" data-es="INMAG convertido" data-en="INMAG converted">INMAG convertido</div>
+        <div class="idx-val" id="ar-vivo">—</div>
+        <div class="idx-unit">USD/kg vivo</div>
+        <div class="idx-chg" id="ar-vivo-chg"></div>
+        <div class="idx-note" id="ar-inmag-raw"></div>
+      </div>
+      <div class="idx-card secondary comp">
+        <span class="idx-badge-top red" data-es="Carcasa doméstica" data-en="Domestic carcass">Carcasa doméstica</span>
+        <div class="idx-label red" data-es="Precio al gancho (conv.)" data-en="Hook price (conv.)">Precio al gancho (conv.)</div>
+        <div class="idx-val" id="ar-gancho">—</div>
+        <div class="idx-unit">USD/ton</div>
+        <div class="idx-chg" id="ar-gancho-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="INMAG — evolución 6 meses (ARS/kg)" data-en="INMAG — 6-month trend (ARS/kg)">INMAG — evolución 6 meses (ARS/kg)</div>
+        <div style="position:relative;height:85px;"><canvas id="chartAR"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BRASIL -->
+  <div class="market-card competidor" id="card-br">
+    <div class="card-header">
+      <div class="card-title">
+        🇧🇷
+        <span data-es="Brasil" data-en="Brazil">Brasil</span>
+        <span class="card-badge competidor" data-es="Competidor" data-en="Competitor">Competidor</span>
+      </div>
+      <div class="card-source" data-es="Boi Gordo CEPEA/Esalq · Precio gancho SP" data-en="Boi Gordo CEPEA/Esalq · SP carcass price">Boi Gordo CEPEA/Esalq · Precio gancho SP</div>
+    </div>
+    <div class="indices-grid">
+      <div class="idx-card primary">
+        <span class="idx-badge-top gold" data-es="Novillo vivo equiv." data-en="Live cattle equiv.">Novillo vivo equiv.</span>
+        <div class="idx-label gold" data-es="Boi Gordo convertido" data-en="Boi Gordo converted">Boi Gordo convertido</div>
+        <div class="idx-val" id="br-vivo">—</div>
+        <div class="idx-unit">USD/kg vivo</div>
+        <div class="idx-chg" id="br-vivo-chg"></div>
+        <div class="idx-note" id="br-boi-raw"></div>
+      </div>
+      <div class="idx-card secondary comp">
+        <span class="idx-badge-top red" data-es="Carcasa doméstica" data-en="Domestic carcass">Carcasa doméstica</span>
+        <div class="idx-label red" data-es="Precio al gancho (conv.)" data-en="Hook price (conv.)">Precio al gancho (conv.)</div>
+        <div class="idx-val" id="br-gancho">—</div>
+        <div class="idx-unit">USD/ton</div>
+        <div class="idx-chg" id="br-gancho-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="Boi Gordo — 6 meses (BRL/@)" data-en="Boi Gordo — 6 months (BRL/@)">Boi Gordo — 6 meses (BRL/@)</div>
+        <div style="position:relative;height:85px;"><canvas id="chartBR"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUSTRALIA -->
+  <div class="market-card competidor" id="card-au">
+    <div class="card-header">
+      <div class="card-title">
+        🇦🇺
+        <span data-es="Australia" data-en="Australia">Australia</span>
+        <span class="card-badge competidor" data-es="Competidor" data-en="Competitor">Competidor</span>
+      </div>
+      <div class="card-source">MLA · EYCI · Heavy Steer over-the-hooks</div>
+    </div>
+    <div class="indices-grid">
+      <div class="idx-card primary">
+        <span class="idx-badge-top gold" data-es="Novillo vivo equiv." data-en="Live cattle equiv.">Novillo vivo equiv.</span>
+        <div class="idx-label gold" data-es="EYCI convertido" data-en="EYCI converted">EYCI convertido</div>
+        <div class="idx-val" id="au-vivo">—</div>
+        <div class="idx-unit">USD/kg vivo</div>
+        <div class="idx-chg" id="au-vivo-chg"></div>
+        <div class="idx-note" id="au-eyci-raw"></div>
+      </div>
+      <div class="idx-card secondary comp">
+        <span class="idx-badge-top red" data-es="Carcasa doméstica" data-en="Domestic carcass">Carcasa doméstica</span>
+        <div class="idx-label red" data-es="Heavy Steer OTH (conv.)" data-en="Heavy Steer OTH (conv.)">Heavy Steer OTH (conv.)</div>
+        <div class="idx-val" id="au-gancho">—</div>
+        <div class="idx-unit">USD/ton</div>
+        <div class="idx-chg" id="au-gancho-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="EYCI — 6 meses (AUD c/kg lw)" data-en="EYCI — 6 months (AUD c/kg lw)">EYCI — 6 meses (AUD c/kg lw)</div>
+        <div style="position:relative;height:85px;"><canvas id="chartAU"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════
+       GRUPO 2 — MERCADOS COMPRADORES
+  ═══════════════════════════════════════ -->
+  <div class="group-header compradores">
+    <div class="group-icon">🛒</div>
+    <div>
+      <div class="group-title compradores" data-es="Mercados compradores" data-en="Import markets">Mercados compradores</div>
+      <div class="group-desc" data-es="Destinos donde Argentina puede exportar carne vacuna. El CIF muestra el precio que paga cada mercado." data-en="Markets where Argentina can export beef. CIF shows the price each market pays.">Destinos donde Argentina puede exportar carne vacuna. El CIF muestra el precio que paga cada mercado.</div>
+    </div>
+    <div class="group-badge compradores" data-es="2 índices por mercado" data-en="2 indexes per market">2 índices por mercado</div>
+  </div>
+
+  <!-- CHINA -->
+  <div class="market-card comprador" id="card-cn">
+    <div class="card-header">
+      <div class="card-title">
+        🇨🇳
+        <span data-es="China" data-en="China">China</span>
+        <span class="card-badge comprador" data-es="Comprador principal" data-en="Main buyer">Comprador principal</span>
+      </div>
+      <div class="card-source" data-es="APEA · GACC China Customs · Trade Data Monitor" data-en="APEA · GACC China Customs · Trade Data Monitor">APEA · GACC China Customs · Trade Data Monitor</div>
+    </div>
+    <div class="indices-grid">
+      <div class="idx-card primary">
+        <span class="idx-badge-top gold" data-es="Novillo vivo equiv." data-en="Live cattle equiv.">Novillo vivo equiv.</span>
+        <div class="idx-label gold" data-es="Desde CIF importación" data-en="From import CIF">Desde CIF importación</div>
+        <div class="idx-val" id="cn-vivo">—</div>
+        <div class="idx-unit">USD/kg vivo est.</div>
+        <div class="idx-chg" id="cn-vivo-chg"></div>
+      </div>
+      <div class="idx-card secondary">
+        <span class="idx-badge-top blue" data-es="CIF importación" data-en="Import CIF">CIF importación</span>
+        <div class="idx-label blue" data-es="Precio que paga China" data-en="Price China pays">Precio que paga China</div>
+        <div class="idx-val" id="cn-cif">—</div>
+        <div class="idx-unit">USD/ton</div>
+        <div class="idx-chg" id="cn-cif-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="CIF China — 6 meses (USD/ton)" data-en="China CIF — 6 months (USD/ton)">CIF China — 6 meses (USD/ton)</div>
+        <div style="position:relative;height:85px;"><canvas id="chartCN"></canvas></div>
+      </div>
+    </div>
+    <div class="ctx-note" id="cn-nota"></div>
+  </div>
+
+  <!-- ESTADOS UNIDOS -->
+  <div class="market-card comprador" id="card-us">
+    <div class="card-header">
+      <div class="card-title">
+        🇺🇸
+        <span data-es="Estados Unidos" data-en="United States">Estados Unidos</span>
+        <span class="card-badge comprador" data-es="Comprador #2" data-en="Buyer #2">Comprador #2</span>
+      </div>
+      <div class="card-source">CME Live Cattle · USDA Imported Beef Trade Report</div>
+    </div>
+    <div class="indices-grid">
+      <div class="idx-card primary">
+        <span class="idx-badge-top gold" data-es="Novillo vivo equiv." data-en="Live cattle equiv.">Novillo vivo equiv.</span>
+        <div class="idx-label gold" data-es="CME Live Cattle convertido" data-en="CME Live Cattle converted">CME Live Cattle convertido</div>
+        <div class="idx-val" id="us-vivo">—</div>
+        <div class="idx-unit">USD/kg vivo</div>
+        <div class="idx-chg" id="us-vivo-chg"></div>
+        <div class="idx-note" id="us-cme-raw"></div>
+      </div>
+      <div class="idx-card secondary">
+        <span class="idx-badge-top blue" data-es="CIF importación" data-en="Import CIF">CIF importación</span>
+        <div class="idx-label blue" data-es="90CL beef CIF EE.UU." data-en="90CL beef CIF USA">90CL beef CIF EE.UU.</div>
+        <div class="idx-val" id="us-cif">—</div>
+        <div class="idx-unit">USD/ton</div>
+        <div class="idx-chg" id="us-cif-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="CME Live Cattle — 6 meses (USD/cwt)" data-en="CME Live Cattle — 6 months (USD/cwt)">CME Live Cattle — 6 meses (USD/cwt)</div>
+        <div style="position:relative;height:85px;"><canvas id="chartUS"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISRAEL -->
+  <div class="market-card comprador" id="card-il">
+    <div class="card-header">
+      <div class="card-title">
+        🇮🇱
+        <span data-es="Israel" data-en="Israel">Israel</span>
+        <span class="card-badge comprador" data-es="Comprador · Kosher" data-en="Buyer · Kosher">Comprador · Kosher</span>
+      </div>
+      <div class="card-source" data-es="APEA · Ministerio de Agricultura de Israel" data-en="APEA · Israeli Ministry of Agriculture">APEA · Ministerio de Agricultura de Israel</div>
+    </div>
+    <div class="indices-grid">
+      <div class="idx-card primary">
+        <span class="idx-badge-top gold" data-es="Novillo vivo equiv." data-en="Live cattle equiv.">Novillo vivo equiv.</span>
+        <div class="idx-label gold" data-es="Desde CIF importación" data-en="From import CIF">Desde CIF importación</div>
+        <div class="idx-val" id="il-vivo">—</div>
+        <div class="idx-unit">USD/kg vivo est.</div>
+        <div class="idx-chg" id="il-vivo-chg"></div>
+      </div>
+      <div class="idx-card secondary">
+        <span class="idx-badge-top blue" data-es="CIF importación" data-en="Import CIF">CIF importación</span>
+        <div class="idx-label blue" data-es="Precio que paga Israel" data-en="Price Israel pays">Precio que paga Israel</div>
+        <div class="idx-val" id="il-cif">—</div>
+        <div class="idx-unit">USD/ton</div>
+        <div class="idx-chg" id="il-cif-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="CIF Israel — 6 meses (USD/ton)" data-en="Israel CIF — 6 months (USD/ton)">CIF Israel — 6 meses (USD/ton)</div>
+        <div style="position:relative;height:85px;"><canvas id="chartIL"></canvas></div>
+      </div>
+    </div>
+    <div class="ctx-note" id="il-nota"></div>
+  </div>
+
+  <!-- UNIÓN EUROPEA -->
+  <div class="market-card comprador" id="card-eu">
+    <div class="card-header">
+      <div class="card-title">
+        🇪🇺
+        <span data-es="Unión Europea" data-en="European Union">Unión Europea</span>
+        <span class="card-badge comprador" data-es="Comprador · Cuota Hilton" data-en="Buyer · Hilton Quota">Comprador · Cuota Hilton</span>
+      </div>
+      <div class="card-source" data-es="Comisión Europea · Meat Market Observatory · R3 steer" data-en="European Commission · Meat Market Observatory · R3 steer">Comisión Europea · Meat Market Observatory · R3 steer</div>
+    </div>
+    <div class="indices-grid">
+      <div class="idx-card primary">
+        <span class="idx-badge-top gold" data-es="Novillo vivo equiv." data-en="Live cattle equiv.">Novillo vivo equiv.</span>
+        <div class="idx-label gold" data-es="R3 steer convertido" data-en="R3 steer converted">R3 steer convertido</div>
+        <div class="idx-val" id="eu-vivo">—</div>
+        <div class="idx-unit">USD/kg vivo est.</div>
+        <div class="idx-chg" id="eu-vivo-chg"></div>
+        <div class="idx-note" id="eu-r3-raw"></div>
+      </div>
+      <div class="idx-card secondary">
+        <span class="idx-badge-top blue" data-es="CIF importación" data-en="Import CIF">CIF importación</span>
+        <div class="idx-label blue" data-es="Precio que paga la UE" data-en="Price EU pays">Precio que paga la UE</div>
+        <div class="idx-val" id="eu-cif">—</div>
+        <div class="idx-unit">USD/ton</div>
+        <div class="idx-chg" id="eu-cif-chg"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label" data-es="R3 steer — 6 meses (EUR/100kg)" data-en="R3 steer — 6 months (EUR/100kg)">R3 steer — 6 meses (EUR/100kg)</div>
+        <div style="position:relative;height:85px;"><canvas id="chartEU"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.main -->
+
+<footer>BeefIndex &mdash; <span data-es="Datos de referencia. No constituyen asesoramiento financiero." data-en="Reference data only. Not financial advice.">Datos de referencia. No constituyen asesoramiento financiero.</span></footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 data-es="Acceder" data-en="Sign in">Acceder</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem;" data-es="Plataforma exclusiva para productores exportadores" data-en="Exclusive platform for beef exporters">Plataforma exclusiva para productores exportadores</p>
+    <div class="tab-row">
+      <button id="tab-login" class="tab-btn active"   onclick="setTab('login')"    data-es="Ingresar"    data-en="Log in">Ingresar</button>
+      <button id="tab-reg"   class="tab-btn inactive" onclick="setTab('register')" data-es="Registrarse" data-en="Register">Registrarse</button>
+    </div>
+    <div id="form-login">
+      <div class="field"><label data-es="Correo electrónico" data-en="Email">Correo electrónico</label><input type="email" placeholder="nombre@empresa.com"></div>
+      <div class="field"><label data-es="Contraseña" data-en="Password">Contraseña</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-submit" data-es="Ingresar" data-en="Sign in">Ingresar</button>
+    </div>
+    <div id="form-register" style="display:none;">
+      <div class="field"><label data-es="Nombre completo" data-en="Full name">Nombre completo</label><input type="text" placeholder="Juan García"></div>
+      <div class="field"><label data-es="Correo electrónico" data-en="Email">Correo electrónico</label><input type="email" placeholder="nombre@empresa.com"></div>
+      <div class="field"><label data-es="Empresa / Frigorífico" data-en="Company">Empresa / Frigorífico</label><input type="text" placeholder="Frigorífico SA"></div>
+      <div class="field"><label data-es="Contraseña" data-en="Password">Contraseña</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-submit" data-es="Crear cuenta" data-en="Create account">Crear cuenta</button>
+    </div>
+  </div>
+</div>
+
+<script src="precios.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════
+   FACTORES DE CONVERSIÓN FIJOS
+══════════════════════════════════════════════════════ */
+const KOU_EU  = 0.55;   // killing-out % promedio UE (carcasa → vivo)
+const KOU_CIF = 0.55;   // factor para estimar vivo desde CIF compradores
+const LB_KG   = 0.4536; // kg por libra
+const CWT_LB  = 100;    // libras por hundredweight
+
+/* ══════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+function set(id, v)    { const e=$(id); if(e) e.textContent=v; }
+function setH(id, v)   { const e=$(id); if(e) e.innerHTML=v;   }
+function setChg(id, txt, tend) {
+  const e=$(id); if(!e) return;
+  e.textContent = txt;
+  e.className   = 'idx-chg' + (tend ? ' '+tend : '');
+}
+function fmt(n, d=2)  { return '$' + Number(n).toFixed(d); }
+function fmtT(n)      { return '$' + Math.round(n).toLocaleString('es-AR'); }
+
+function mkLine(id, labs, data, color) {
+  const ex = Chart.getChart(id); if(ex) ex.destroy();
+  new Chart($(id), {
+    type: 'line',
+    data: { labels: labs, datasets: [{
+      data, borderColor: color, borderWidth: 2,
+      pointRadius: 0, fill: true, backgroundColor: color+'22', tension: 0.4
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:{enabled:false} },
+      scales:  { x:{display:false}, y:{display:false} }
+    }
+  });
+}
+const MESES = ['Oct','Nov','Dic','Ene','Feb','Mar'];
+
+
+/* ══════════════════════════════════════════════════════
+   RENDERIZADO — COMPETIDORES
+══════════════════════════════════════════════════════ */
+
+function renderAR() {
+  const d = DATOS.argentina;
+  // 1er índice: INMAG → USD/kg vivo
+  const vivo = d.inmag_ars / d.tipo_cambio;
+  set('ar-vivo', fmt(vivo));
+  setChg('ar-vivo-chg', d.cambio_vivo, d.tendencia_vivo);
+  set('ar-inmag-raw', 'INMAG: $' + d.inmag_ars.toLocaleString('es-AR') + ' ARS · TC: $' + d.tipo_cambio.toLocaleString('es-AR'));
+
+  // 2do índice: gancho ARS/kg → USD/ton
+  const gancho = (d.gancho_ars / d.tipo_cambio) * 1000;
+  set('ar-gancho', fmtT(gancho));
+  setChg('ar-gancho-chg', d.cambio_gancho, d.tendencia_gancho);
+
+  mkLine('chartAR', MESES, d.historico, '#74b9e8');
+}
+
+function renderBR() {
+  const d = DATOS.brasil;
+  // 1er índice: Boi Gordo BRL/@ → USD/kg vivo
+  const vivo = (d.boi_gordo_brl_arroba / 15) / d.tipo_cambio_brl;
+  set('br-vivo', fmt(vivo));
+  setChg('br-vivo-chg', d.cambio_vivo, d.tendencia_vivo);
+  set('br-boi-raw', 'Boi Gordo: R$' + d.boi_gordo_brl_arroba.toFixed(2) + '/@ · TC: R$' + d.tipo_cambio_brl.toFixed(2));
+
+  // 2do índice: acepta gancho_usd_kg (directo de CEPEA en inglés) o gancho_brl_kg (en reales)
+  const gancho = d.gancho_usd_kg != null
+    ? d.gancho_usd_kg * 1000
+    : (d.gancho_brl_kg / d.tipo_cambio_brl) * 1000;
+  set('br-gancho', fmtT(gancho));
+  setChg('br-gancho-chg', d.cambio_gancho, d.tendencia_gancho);
+
+  mkLine('chartBR', MESES, d.historico, '#e67e22');
+}
+
+function renderAU() {
+  const d = DATOS.australia;
+  // 1er índice: EYCI AUDc/kg → USD/kg vivo
+  const vivo = (d.eyci_aud_cents_kg / 100) / d.tipo_cambio_aud;
+  set('au-vivo', fmt(vivo));
+  setChg('au-vivo-chg', d.cambio_vivo, d.tendencia_vivo);
+  set('au-eyci-raw', 'EYCI: ' + d.eyci_aud_cents_kg + 'c/kg lw · TC: 1 USD = ' + d.tipo_cambio_aud.toFixed(3) + ' AUD');
+
+  // 2do índice: Heavy Steer OTH AUDc/kg → USD/ton
+  const gancho = ((d.heavy_steer_aud_cents_kg / 100) / d.tipo_cambio_aud) * 1000;
+  set('au-gancho', fmtT(gancho));
+  setChg('au-gancho-chg', d.cambio_gancho, d.tendencia_gancho);
+
+  mkLine('chartAU', MESES, d.historico, '#f39c12');
+}
+
+
+/* ══════════════════════════════════════════════════════
+   RENDERIZADO — COMPRADORES
+══════════════════════════════════════════════════════ */
+
+function renderCN() {
+  const d = DATOS.china;
+  // 2do índice: CIF USD/ton (directo)
+  set('cn-cif', fmtT(d.cif_usd_ton));
+  setChg('cn-cif-chg', d.cambio_cif, d.tendencia_cif);
+
+  // 1er índice: estimar vivo desde CIF
+  // CIF USD/ton → USD/kg carcasa = ÷1000 → USD/kg vivo = ÷ KOU_CIF
+  const vivo = (d.cif_usd_ton / 1000) / KOU_CIF;
+  set('cn-vivo', fmt(vivo));
+  setChg('cn-vivo-chg', d.cambio_cif, d.tendencia_cif);
+
+  if(d.nota) set('cn-nota', d.nota);
+  mkLine('chartCN', MESES, d.historico, '#c0392b');
+}
+
+function renderUS() {
+  const d = DATOS.eeuu;
+  // 1er índice: CME Live Cattle USD/cwt → USD/kg vivo
+  // cwt = 100 lb · 1 lb = 0.4536 kg → USD/kg = (cwt/100) × (1/0.4536) invertido
+  // Precio en cwt: cada cwt = 100 lb · precio USD/cwt → USD/lb = ÷100 → USD/kg = × (1/0.4536) pero cwt ya tiene 100lb
+  // Simplificado: USD/kg vivo = (cme_cwt × LB_KG) / CWT_LB
+  const vivo = (d.cme_live_cattle_cwt * LB_KG) / CWT_LB;
+  set('us-vivo', fmt(vivo));
+  setChg('us-vivo-chg', d.cambio_vivo, d.tendencia_vivo);
+  set('us-cme-raw', 'CME Live Cattle: $' + d.cme_live_cattle_cwt.toFixed(2) + '/cwt');
+
+  // 2do índice: CIF 90CL beef USD/ton
+  set('us-cif', fmtT(d.cif_usd_ton));
+  setChg('us-cif-chg', d.cambio_cif, d.tendencia_cif);
+
+  mkLine('chartUS', MESES, d.historico, '#8B1A1A');
+}
+
+function renderEU() {
+  const d = DATOS.ue;
+  // 1er índice: R3 EUR/100kg carcasa → USD/kg vivo
+  // EUR/100kg → EUR/kg = ÷100 → USD/kg carcasa = ÷ tipo_cambio → USD/kg vivo = ÷ KOU_EU
+  const vivo = (d.r3_eur_100kg / 100 / KOU_EU) / d.tipo_cambio_eur;
+  set('eu-vivo', fmt(vivo));
+  setChg('eu-vivo-chg', d.cambio_vivo, d.tendencia_vivo);
+  set('eu-r3-raw', 'R3 steer: ' + d.r3_eur_100kg.toFixed(2) + ' EUR/100kg · TC: 1 USD = ' + (1/d.tipo_cambio_eur).toFixed(3) + ' EUR');
+
+  // 2do índice: CIF EUR/ton → USD/ton
+  const cif_usd = d.cif_eur_ton / d.tipo_cambio_eur;
+  set('eu-cif', fmtT(cif_usd));
+  setChg('eu-cif-chg', d.cambio_cif, d.tendencia_cif);
+
+  mkLine('chartEU', MESES, d.historico, '#27ae60');
+}
+
+function renderIL() {
+  const d = DATOS.israel;
+  // 2do índice: CIF USD/ton
+  set('il-cif', fmtT(d.cif_usd_ton));
+  setChg('il-cif-chg', d.cambio_cif, d.tendencia_cif);
+
+  // 1er índice: estimar vivo desde CIF
+  const vivo = (d.cif_usd_ton / 1000) / KOU_CIF;
+  set('il-vivo', fmt(vivo));
+  setChg('il-vivo-chg', d.cambio_cif, d.tendencia_cif);
+
+  if(d.nota) set('il-nota', d.nota);
+  mkLine('chartIL', MESES, d.historico, '#2980b9');
+}
+
+
+/* ══════════════════════════════════════════════════════
+   TIMESTAMP
+══════════════════════════════════════════════════════ */
+function setTimestamp() {
+  const fechas = [
+    DATOS.argentina.fechaActualizacion,
+    DATOS.brasil.fechaActualizacion,
+    DATOS.australia.fechaActualizacion,
+    DATOS.eeuu.fechaActualizacion,
+    DATOS.ue.fechaActualizacion,
+    DATOS.china.fechaActualizacion,
+    DATOS.israel.fechaActualizacion,
+  ];
+  const ultima = fechas.reduce((a, b) => {
+    const da = a.split('/').reverse().join('');
+    const db = b.split('/').reverse().join('');
+    return da > db ? a : b;
+  });
+  set('upd-text', 'Última actualización: ' + ultima + ' · Conversiones automáticas a USD/kg vivo');
+}
+
+
+/* ══════════════════════════════════════════════════════
+   IDIOMA
+══════════════════════════════════════════════════════ */
+function setLang(lang) {
+  document.querySelectorAll('[data-es]').forEach(el => { el.textContent = el.getAttribute('data-'+lang); });
+  const es = lang === 'es';
+  $('btn-es').className = 'btn-lang ' + (es  ? 'active' : 'inactive');
+  $('btn-en').className = 'btn-lang ' + (!es ? 'active' : 'inactive');
+}
+
+
+/* ══════════════════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════════════════ */
+function openModal()  { $('modal').classList.add('show'); }
+function closeModal() { $('modal').classList.remove('show'); }
+function setTab(tab) {
+  $('form-login').style.display    = tab === 'login'    ? 'block' : 'none';
+  $('form-register').style.display = tab === 'register' ? 'block' : 'none';
+  $('tab-login').className = 'tab-btn ' + (tab === 'login'    ? 'active' : 'inactive');
+  $('tab-reg').className   = 'tab-btn ' + (tab === 'register' ? 'active' : 'inactive');
+}
+
+
+/* ══════════════════════════════════════════════════════
+   INICIO
+══════════════════════════════════════════════════════ */
+renderAR();
+renderBR();
+renderAU();
+renderCN();
+renderUS();
+renderEU();
+renderIL();
+setTimestamp();
+
+</script>
+</body>
+</html>
