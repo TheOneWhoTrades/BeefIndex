@@ -1,0 +1,89 @@
+# ════════════════════════════════════════════════════════════════
+# BeefIndex — Actualización automática semanal
+# Archivo: .github/workflows/actualizar-precios.yml
+#
+# QUÉ HACE:
+#   1. Se ejecuta automáticamente cada lunes a las 9am (hora Argentina)
+#   2. Corre el script update_precios.py
+#   3. Si hubo cambios, hace commit y push a main automáticamente
+#   4. GitHub Pages actualiza el sitio en ~2 minutos
+#
+# También podés ejecutarlo manualmente:
+#   GitHub → Actions → "Actualizar precios BeefIndex" → "Run workflow"
+# ════════════════════════════════════════════════════════════════
+ 
+name: Actualizar precios BeefIndex
+ 
+on:
+  # ── Ejecución automática: lunes a las 12:00 UTC (9am Argentina) ──
+  schedule:
+    - cron: '0 12 * * 1'
+ 
+  # ── Ejecución manual desde la interfaz de GitHub ──
+  workflow_dispatch:
+    inputs:
+      razon:
+        description: 'Motivo de la ejecución manual (opcional)'
+        required: false
+        default: 'Actualización manual'
+ 
+jobs:
+  actualizar:
+    name: Obtener precios y actualizar precios.js
+    runs-on: ubuntu-latest
+ 
+    # Permiso para hacer commit al repositorio
+    permissions:
+      contents: write
+ 
+    steps:
+ 
+      # 1. Descargar el código del repositorio
+      - name: 📥 Checkout del repositorio
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+ 
+      # 2. Instalar Python (la librería estándar es suficiente, sin pip)
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+ 
+      # 3. Ejecutar el script de actualización
+      - name: 🔄 Ejecutar update_precios.py
+        run: python scripts/update_precios.py
+ 
+      # 4. Ver qué cambió
+      - name: 🔍 Verificar cambios
+        id: cambios
+        run: |
+          if git diff --quiet precios.js; then
+            echo "hay_cambios=false" >> $GITHUB_OUTPUT
+            echo "No hubo cambios en precios.js"
+          else
+            echo "hay_cambios=true" >> $GITHUB_OUTPUT
+            echo "Se detectaron cambios en precios.js:"
+            git diff precios.js
+          fi
+ 
+      # 5. Commit y push solo si hubo cambios
+      - name: 💾 Commit y push de precios.js actualizado
+        if: steps.cambios.outputs.hay_cambios == 'true'
+        run: |
+          git config user.name  "BeefIndex Bot"
+          git config user.email "bot@beefindex.github"
+          git add precios.js
+          git commit -m "🤖 Actualización automática de precios — $(date +'%d/%m/%Y')"
+          git push
+ 
+      # 6. Notificar resultado
+      - name: ✅ Resultado
+        run: |
+          if [ "${{ steps.cambios.outputs.hay_cambios }}" == "true" ]; then
+            echo "✅ precios.js actualizado y publicado correctamente."
+            echo "   El sitio se actualizará en ~2 minutos en GitHub Pages."
+          else
+            echo "ℹ️  No hubo cambios en los datos. No se hizo commit."
+          fi
+ 
