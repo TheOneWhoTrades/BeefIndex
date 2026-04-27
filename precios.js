@@ -69,11 +69,11 @@ const DATOS = {
      Conversión automática: USD/ton = (gancho_ars ÷ tipo_cambio) × 1000
   ────────────────────────────────────────────────────── */
   argentina: {
-    fechaActualizacion: "21/04/2026",
+    fechaActualizacion: "27/04/2026",
 
     /* 1er índice */
     inmag_ars:    4453.13,
-    tipo_cambio:  1372.77,
+    tipo_cambio:  1397.21,
     cambio_vivo:    "↑ +1.8% esta semana",
     tendencia_vivo: "up",
 
@@ -119,11 +119,11 @@ const DATOS = {
        → Dejá gancho_usd_kg en null si usás esta opción.
   ────────────────────────────────────────────────────── */
   brasil: {
-    fechaActualizacion: "21/04/2026",
+    fechaActualizacion: "27/04/2026",
 
     /* 1er índice */
     boi_gordo_brl_arroba: 350.00,
-    tipo_cambio_brl:        4.9803,
+    tipo_cambio_brl:        4.9897,
     cambio_vivo:    "↓ -0.4% esta semana",
     tendencia_vivo: "dn",
 
@@ -161,11 +161,11 @@ const DATOS = {
      Conversión automática: USD/ton = (heavy_steer ÷ 100) ÷ tipo_cambio × 1000
   ────────────────────────────────────────────────────── */
   australia: {
-    fechaActualizacion: "21/04/2026",
+    fechaActualizacion: "27/04/2026",
 
     /* 1er índice */
     eyci_aud_cents_kg:  820,
-    tipo_cambio_aud:    1.3948,
+    tipo_cambio_aud:    1.4001,
     cambio_vivo:    "↑ +1.2% esta semana",
     tendencia_vivo: "up",
 
@@ -210,7 +210,7 @@ const DATOS = {
         Nota: desde 2026 China aplica 55% de arancel extra sobre cuota.
   ────────────────────────────────────────────────────── */
   china: {
-    fechaActualizacion: "21/04/2026",
+    fechaActualizacion: "27/04/2026",
 
     /* 2do índice — CIF importación */
     cif_usd_ton:  5200,
@@ -258,7 +258,7 @@ const DATOS = {
         para exportaciones argentinas a EE.UU. (90CL o manufacturing beef).
   ────────────────────────────────────────────────────── */
   eeuu: {
-    fechaActualizacion: "21/04/2026",
+    fechaActualizacion: "27/04/2026",
 
     /* 1er índice */
     cme_live_cattle_cwt: 242.50,
@@ -313,11 +313,11 @@ const DATOS = {
         precio real que paga la UE por estos cortes premium.
   ────────────────────────────────────────────────────── */
   ue: {
-    fechaActualizacion: "21/04/2026",
+    fechaActualizacion: "27/04/2026",
 
     /* 1er índice */
     r3_eur_100kg:    480.50,
-    tipo_cambio_eur:   0.849,
+    tipo_cambio_eur:   0.8542,
     cambio_vivo:    "↑ +2.1% esta semana",
     tendencia_vivo: "up",
 
@@ -355,7 +355,7 @@ const DATOS = {
         Aproximadamente 20-25 plantas frigoríficas argentinas están habilitadas.
   ────────────────────────────────────────────────────── */
   israel: {
-    fechaActualizacion: "21/04/2026",
+    fechaActualizacion: "27/04/2026",
 
     /* 2do índice */
     cif_usd_ton:  8800,
